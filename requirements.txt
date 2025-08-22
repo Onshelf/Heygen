@@ -1,0 +1,8 @@
+!pip install pandas openpyxl wikipedia-api
+!pip install requests PyPDF2 openai
+!pip install openai==0.28
+!pip install google-cloud-texttospeech
+!pip install gtts
+!pip install requests
+!pip install python-dotenv
+!pip install stability-sdk
