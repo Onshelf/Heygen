@@ -1,8 +1,14 @@
-!pip install pandas openpyxl wikipedia-api
-!pip install requests PyPDF2 openai
-!pip install openai==0.28
-!pip install google-cloud-texttospeech
-!pip install gtts
-!pip install requests
-!pip install python-dotenv
-!pip install stability-sdk
+# Core dependencies
+pandas==1.5.3
+openpyxl==3.1.2
+requests==2.31.0
+PyPDF2==3.0.1
+
+# OpenAI API (specific version)
+openai==0.28
+
+# Optional: Wikipedia API for future enhancements
+wikipedia-api==0.6.0
+
+# Development tools (optional)
+python-dotenv==1.0.0
