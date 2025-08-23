@@ -1,5 +1,6 @@
 # generators/youtube_post_generator.py
 import openai
+import re
 from pathlib import Path
 from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
 
@@ -37,10 +38,11 @@ def generate_youtube_post(first_name, text, base_dir):
     - Setting and background context
     - Style and artistic direction (photorealistic, cinematic, illustration, etc.)
     - Lighting and mood specifications
-    - Technical details (4K, ultra detailed, professional photography)
     - Camera angle and composition
     
     Make it comprehensive and suitable for AI image models like DALL-E, Midjourney, or Stable Diffusion.
+    
+    IMPORTANT: DO NOT include specific years, dates, or time periods in the prompt.
     """
 
     try:
@@ -61,7 +63,7 @@ def generate_youtube_post(first_name, text, base_dir):
         image_response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are an expert at creating detailed AI image generation prompts."},
+                {"role": "system", "content": "You are an expert at creating detailed AI image generation prompts. Avoid including specific years or time periods."},
                 {"role": "user", "content": image_prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
@@ -70,17 +72,16 @@ def generate_youtube_post(first_name, text, base_dir):
         
         ai_image_prompt = image_response.choices[0].message.content.strip()
         
+        # Clean the AI image prompt - remove unwanted text and year references
+        cleaned_image_prompt = clean_ai_prompt(ai_image_prompt, first_name)
+        
         # Save YouTube caption to file
         with open(post_dir / "youtube_caption.txt", "w", encoding="utf-8") as f:
-            f.write(f"🎬 YouTube Caption for {first_name}\n")
-            f.write("="*50 + "\n\n")
             f.write(youtube_caption)
         
-        # Save AI image prompt to separate file
+        # Save cleaned AI image prompt to separate file
         with open(post_dir / "ai_image_prompt.txt", "w", encoding="utf-8") as f:
-            f.write(f"🎨 AI Image Prompt for {first_name}\n")
-            f.write("="*50 + "\n\n")
-            f.write(ai_image_prompt)
+            f.write(cleaned_image_prompt)
         
         print(f"✅ YouTube post generated successfully!")
         print(f"📝 Caption saved: {post_dir}/youtube_caption.txt")
@@ -90,3 +91,44 @@ def generate_youtube_post(first_name, text, base_dir):
     except Exception as e:
         print(f"❌ Error generating YouTube post: {e}")
         return False
+
+def clean_ai_prompt(prompt_text, first_name):
+    """
+    Clean the AI image prompt by removing unwanted introductory text and year references
+    while preserving the name and descriptive content
+    """
+    # Remove common introductory patterns but keep the name in the content
+    patterns_to_remove = [
+        "**AI Image Generation Prompt:**",
+        "This prompt is designed to create",
+        "capturing not just his physical likeness",
+        "the essence of his legacy",
+        "one of the greatest minds in history",
+        "==================================================",
+        "**Prompt:**",
+        "Here is a detailed AI image generation prompt:",
+    ]
+    
+    cleaned_prompt = prompt_text
+    for pattern in patterns_to_remove:
+        cleaned_prompt = cleaned_prompt.replace(pattern, "")
+    
+    # Remove specific year references (e.g., "in 1947", "from 1920", "during the 1950s")
+    cleaned_prompt = re.sub(r'\b(in|from|during|of|circa)\s+\d{4}s?\b', '', cleaned_prompt, flags=re.IGNORECASE)
+    cleaned_prompt = re.sub(r'\b\d{4}s?\b', '', cleaned_prompt)
+    
+    # Remove any phrases that start with creation verbs but preserve the name
+    # Only remove if they're at the very beginning
+    if re.match(r'^(Create|Generate|Make|Design|Produce)\s+(a|an|the)?\s+', cleaned_prompt, re.IGNORECASE):
+        # Replace the command but keep the rest including the name
+        cleaned_prompt = re.sub(r'^(Create|Generate|Make|Design|Produce)\s+(a|an|the)?\s*', '', cleaned_prompt, flags=re.IGNORECASE)
+    
+    # Remove any double newlines and clean up whitespace
+    cleaned_prompt = "\n".join([line.strip() for line in cleaned_prompt.split("\n") if line.strip()])
+    cleaned_prompt = cleaned_prompt.strip()
+    
+    # Ensure the prompt starts with descriptive content, not creation commands
+    if cleaned_prompt.startswith(('a ', 'an ', 'the ')):
+        cleaned_prompt = cleaned_prompt[0].upper() + cleaned_prompt[1:]
+    
+    return cleaned_prompt
