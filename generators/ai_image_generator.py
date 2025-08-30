@@ -6,8 +6,8 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Import from your existing API config
+from utils.api_config import setup_wavespeed_api
 
 def generate_ai_image(ai_prompt, output_path, width=1024, height=1024, image_name="generated_image.jpg"):
     """
@@ -47,9 +47,10 @@ def generate_ai_image(ai_prompt, output_path, width=1024, height=1024, image_nam
     print(f"🎨 Using AI image prompt: {prompt_text[:100]}...")
     print(f"📐 Image size: {width}x{height}")
     
-    API_KEY = os.getenv("WAVESPEED_API_KEY")
+    # Get and validate API key using your existing config system
+    API_KEY = setup_wavespeed_api()
     if not API_KEY:
-        error_msg = "WAVESPEED_API_KEY not found in environment variables"
+        error_msg = "WaveSpeedAI API key is not configured or invalid"
         print(f"❌ {error_msg}")
         return False, None, error_msg
     
