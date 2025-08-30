@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
 from generators.ai_image_generator import generate_image_from_prompt_file  # Import the AI image generator
+from generators.ai_video_generator import generate_ai_video, VideoGenerationError  # Import the AI video generator
 
 def generate_short_video_content(first_name, text, base_dir):
     """
@@ -104,11 +105,58 @@ def generate_short_video_content(first_name, text, base_dir):
         # Generate AI images from the prompts (all in 720x1280 format)
         image_success = generate_ai_images_from_prompts(short_video_dir)
         
+        # Generate AI video from the video prompt (5 seconds, 9:16 aspect ratio)
+        video_success = generate_ai_video_from_prompt(short_video_dir)
+        
         print(f"✅ Short video content generated successfully!")
-        return True and image_success  # Return True only if both content generation and image creation succeeded
+        return True and image_success and video_success  # Return True only if all generations succeeded
         
     except Exception as e:
         print(f"❌ Error generating short video content: {e}")
+        return False
+
+def generate_ai_video_from_prompt(short_video_dir):
+    """
+    Generate AI video from the video prompt file
+    Uses 5-second duration and 9:16 aspect ratio
+    """
+    try:
+        video_prompt_file = short_video_dir / "video_prompt.txt"
+        
+        if video_prompt_file.exists():
+            print("🎬 Generating AI video from prompt...")
+            
+            # Read the video prompt
+            with open(video_prompt_file, "r", encoding="utf-8") as f:
+                video_prompt = f.read().strip()
+            
+            if not video_prompt:
+                print("❌ Video prompt is empty")
+                return False
+            
+            # Generate video with fixed 5-second duration and 9:16 aspect ratio
+            video_url = generate_ai_video(
+                prompt=video_prompt,
+                duration=5,           # Fixed 5-second duration
+                aspect_ratio="9:16",  # Fixed vertical aspect ratio
+                timeout=600           # 10 minute timeout for video generation
+            )
+            
+            # Save the video URL
+            with open(short_video_dir / "video_url.txt", "w", encoding="utf-8") as f:
+                f.write(video_url)
+            
+            print("✅ AI video generated successfully!")
+            return True
+        else:
+            print("❌ Video prompt file not found")
+            return False
+            
+    except VideoGenerationError as e:
+        print(f"❌ AI video generation failed: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Unexpected error generating AI video: {e}")
         return False
 
 def generate_ai_images_from_prompts(short_video_dir):
