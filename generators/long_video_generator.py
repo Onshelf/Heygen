@@ -3,6 +3,7 @@ import openai
 import re
 from pathlib import Path
 from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
+from generators.ai_image_generator import generate_image_from_prompt_file  # Import the AI image generator
 
 def generate_long_video_content(first_name, text, base_dir):
     """
@@ -133,12 +134,119 @@ Avoid detailing childhood family scenes.
         with open(long_video_dir / "script.txt", "w", encoding="utf-8") as f:
             f.write(script_content)
         
+        # Generate thumbnail prompt for the long video
+        thumbnail_prompt = generate_thumbnail_prompt(first_name, text)
+        if thumbnail_prompt:
+            with open(long_video_dir / "thumbnail_prompt.txt", "w", encoding="utf-8") as f:
+                f.write(thumbnail_prompt)
+        
+        # Generate AI images from the prompts (all in 1280x720 format)
+        image_success = generate_ai_images_from_prompts(long_video_dir)
+        
         print(f"✅ Long video content generated successfully!")
         print(f"📝 Script and {len(image_prompts)} image prompts, {len(video_prompts)} video prompts saved")
-        return True
+        return True and image_success
         
     except Exception as e:
         print(f"❌ Error generating script: {e}")
+        return False
+
+def generate_thumbnail_prompt(first_name, text):
+    """
+    Generate a professional thumbnail prompt for the long video
+    """
+    thumbnail_prompt = f"""
+Based EXCLUSIVELY on the following information about {first_name}:
+
+{text[:MAX_TEXT_LENGTH]}
+
+Create a detailed professional AI image generation prompt specifically for a YouTube thumbnail that:
+- Features {first_name} in a powerful, authoritative pose
+- Uses cinematic, dramatic lighting with high contrast
+- Includes a compelling focal point that draws attention
+- Has a professional, polished appearance suitable for documentary content
+- Uses a color palette that conveys importance and gravitas
+- Includes negative space for title text overlay
+- Looks like a professional documentary film poster
+
+IMPORTANT: 
+- DO NOT include specific years, dates, or time periods in the prompt.
+- Focus on adult professional appearance, not childhood.
+- Make it visually striking and click-worthy.
+"""
+
+    try:
+        response = openai.ChatCompletion.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are an expert at creating compelling YouTube thumbnail prompts. Create professional, cinematic prompts that would drive high click-through rates for documentary content."},
+                {"role": "user", "content": thumbnail_prompt}
+            ],
+            temperature=OPENAI_TEMPERATURE,
+            max_tokens=400
+        )
+        
+        prompt_content = response.choices[0].message.content.strip()
+        return clean_ai_prompt(prompt_content, first_name)
+        
+    except Exception as e:
+        print(f"❌ Error generating thumbnail prompt: {e}")
+        return None
+
+def generate_ai_images_from_prompts(long_video_dir):
+    """
+    Generate AI images from the prompt files in the long video directory
+    ALL images use 1280x720 format for documentary-style content
+    """
+    try:
+        image_success = True
+        
+        # Generate images for each image prompt (up to 10 prompts)
+        for i in range(1, 11):
+            prompt_file = long_video_dir / f"image_prompt_{i}.txt"
+            
+            if prompt_file.exists():
+                print(f"🖼️ Generating AI image {i} from prompt...")
+                
+                # Use documentary format (1280x720) for long video content
+                success, image_path, error = generate_image_from_prompt_file(
+                    prompt_file, 
+                    long_video_dir, 
+                    width=1280, 
+                    height=720, 
+                    image_name=f"long_video_image_{i}.jpg"
+                )
+                
+                if success:
+                    print(f"✅ AI image {i} generated successfully!")
+                else:
+                    print(f"❌ AI image {i} generation failed: {error}")
+                    image_success = False
+        
+        # Generate thumbnail image (also in 1280x720 format)
+        thumbnail_prompt_file = long_video_dir / "thumbnail_prompt.txt"
+        if thumbnail_prompt_file.exists():
+            print("🖼️ Generating thumbnail image from prompt...")
+            
+            # Use documentary format (1280x720) for thumbnail
+            success, image_path, error = generate_image_from_prompt_file(
+                thumbnail_prompt_file, 
+                long_video_dir, 
+                width=1280, 
+                height=720, 
+                image_name="long_video_thumbnail.jpg"
+            )
+            
+            if success:
+                print("✅ Thumbnail image generated successfully!")
+            else:
+                print(f"❌ Thumbnail image generation failed: {error}")
+                image_success = False
+        
+        return image_success
+        
+    except Exception as e:
+        print(f"❌ Error generating AI images: {e}")
         return False
 
 def clean_ai_prompt(prompt_text, first_name):
