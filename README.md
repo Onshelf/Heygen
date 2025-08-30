@@ -8,7 +8,7 @@ Generate social media contents automatically
 ```
 
 ```
-!pip install -r requirements.txt
+!python install_dependencies.py
 ```
 ```
 !python /content/Heygen/main.py
