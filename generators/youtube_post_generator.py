@@ -3,6 +3,7 @@ import openai
 import re
 from pathlib import Path
 from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
+from generators.ai_image_generator import generate_image_from_prompt_file  # Updated import
 
 def generate_youtube_post(first_name, text, base_dir):
     """
@@ -86,7 +87,24 @@ def generate_youtube_post(first_name, text, base_dir):
         print(f"✅ YouTube post generated successfully!")
         print(f"📝 Caption saved: {post_dir}/youtube_caption.txt")
         print(f"🎨 Image prompt saved: {post_dir}/ai_image_prompt.txt")
-        return True
+        
+        # Generate AI image using the prompt with YouTube thumbnail size
+        print("🖼️ Generating AI image from prompt...")
+        ai_prompt_file = post_dir / "ai_image_prompt.txt"
+        success, image_path, error = generate_image_from_prompt_file(
+            ai_prompt_file, 
+            post_dir, 
+            width=1280, 
+            height=720, 
+            image_name="youtube_thumbnail.jpg"
+        )
+        
+        if success:
+            print("✅ AI image generated successfully!")
+            return True
+        else:
+            print(f"❌ AI image generation failed: {error}")
+            return False
         
     except Exception as e:
         print(f"❌ Error generating YouTube post: {e}")
