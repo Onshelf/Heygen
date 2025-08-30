@@ -3,7 +3,7 @@
 Generate social media contents automatically
 
 ```
-!git clone [https://github.com/Onshelf/social-media-generator.git](https://github.com/Onshelf/Heygen.git)
+!git clone https://github.com/Onshelf/Heygen.git
 %cd Heygen
 ```
 
