@@ -3,6 +3,7 @@ import openai
 import re
 from pathlib import Path
 from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
+from generators.ai_image_generator import generate_image_from_prompt_file  # Import the AI image generator
 
 def generate_short_video_content(first_name, text, base_dir):
     """
@@ -34,15 +35,25 @@ def generate_short_video_content(first_name, text, base_dir):
     
     {text[:MAX_TEXT_LENGTH]}
     
-    Create a short YouTube video package with the following components:
+    Create a short YouTube Shorts/TikTok/Instagram Reels video package with the following components:
     
     1. SCRIPT: 200-word script starting with a HOOK and ending with a QUESTION asking viewers to comment
     2. DESCRIPTION: Professional video description with relevant hashtags and emojis
     3. IMAGE_PROMPTS: 2 detailed AI image generation prompts for visuals (specify which word they appear with)
     4. VIDEO_PROMPT: 1 detailed AI video generation prompt for a 5-second clip (specify which word it appears with)
+    5. THUMBNAIL_PROMPT: 1 detailed AI image generation prompt specifically for a vertical thumbnail (720x1280)
     
     For the image prompts, use this format and level of detail:
     {image_prompt}
+    
+    For the THUMBNAIL_PROMPT, create a compelling vertical thumbnail (720x1280) that:
+    - Features a clear, high-contrast focal point in vertical composition
+    - Uses bold, eye-catching colors optimized for mobile viewing
+    - Includes expressive facial expression if appropriate
+    - Has a mysterious or intriguing element to drive clicks
+    - Uses professional photography style with dramatic lighting
+    - Includes negative space at the top or bottom for potential text overlay
+    - Optimized for vertical mobile viewing
     
     Format your response EXACTLY like this:
 
@@ -63,17 +74,20 @@ def generate_short_video_content(first_name, text, base_dir):
     [VIDEO_PROMPT]
     Your video prompt here...
     [APPEARS_AT: specific word or phrase]
+
+    [THUMBNAIL_PROMPT]
+    Your thumbnail prompt here...
     """
 
     try:
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a professional video content creator specializing in short-form content. Avoid including specific years or time periods in visual prompts."},
+                {"role": "system", "content": "You are a professional video content creator specializing in short-form vertical content. Avoid including specific years or time periods in visual prompts. Create compelling, click-worthy thumbnail prompts optimized for 720x1280 vertical format."},
                 {"role": "user", "content": prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
-            max_tokens=2500
+            max_tokens=2800  # Increased tokens for additional thumbnail prompt
         )
         
         content = response.choices[0].message.content.strip()
@@ -87,11 +101,70 @@ def generate_short_video_content(first_name, text, base_dir):
         # Parse and save individual components
         components = parse_video_components(content, first_name, short_video_dir)
         
+        # Generate AI images from the prompts (all in 720x1280 format)
+        image_success = generate_ai_images_from_prompts(short_video_dir)
+        
         print(f"✅ Short video content generated successfully!")
-        return True
+        return True and image_success  # Return True only if both content generation and image creation succeeded
         
     except Exception as e:
         print(f"❌ Error generating short video content: {e}")
+        return False
+
+def generate_ai_images_from_prompts(short_video_dir):
+    """
+    Generate AI images from the prompt files in the short video directory
+    ALL images use 720x1280 vertical format
+    """
+    try:
+        image_success = True
+        
+        # Generate images for each image prompt (up to 2 prompts)
+        for i in range(1, 3):
+            prompt_file = short_video_dir / f"image_prompt_{i}.txt"
+            
+            if prompt_file.exists():
+                print(f"🖼️ Generating AI image {i} from prompt...")
+                
+                # Use vertical format (720x1280) for all short video content
+                success, image_path, error = generate_image_from_prompt_file(
+                    prompt_file, 
+                    short_video_dir, 
+                    width=720, 
+                    height=1280, 
+                    image_name=f"short_video_image_{i}.jpg"
+                )
+                
+                if success:
+                    print(f"✅ AI image {i} generated successfully!")
+                else:
+                    print(f"❌ AI image {i} generation failed: {error}")
+                    image_success = False
+        
+        # Generate thumbnail image (also in 720x1280 vertical format)
+        thumbnail_prompt_file = short_video_dir / "thumbnail_prompt.txt"
+        if thumbnail_prompt_file.exists():
+            print("🖼️ Generating thumbnail image from prompt...")
+            
+            # Use vertical format (720x1280) for thumbnail as well
+            success, image_path, error = generate_image_from_prompt_file(
+                thumbnail_prompt_file, 
+                short_video_dir, 
+                width=720, 
+                height=1280, 
+                image_name="short_video_thumbnail.jpg"
+            )
+            
+            if success:
+                print("✅ Thumbnail image generated successfully!")
+            else:
+                print(f"❌ Thumbnail image generation failed: {error}")
+                image_success = False
+        
+        return image_success
+        
+    except Exception as e:
+        print(f"❌ Error generating AI images: {e}")
         return False
 
 def parse_video_components(content, first_name, short_video_dir):
@@ -127,14 +200,21 @@ def parse_video_components(content, first_name, short_video_dir):
                     f.write(cleaned_prompt)
         
         # Save video prompt (cleaned)
-        if "[VIDEO_PROMPT]" in content:
-            video_prompt = content.split("[VIDEO_PROMPT]")[1].strip()
+        if "[VIDEO_PROMPT]" in content and "[THUMBNAIL_PROMPT]" in content:
+            video_prompt = content.split("[VIDEO_PROMPT]")[1].split("[THUMBNAIL_PROMPT]")[0].strip()
             # Remove the [APPEARS_AT] line if present
             if "[APPEARS_AT:" in video_prompt:
                 video_prompt = video_prompt.split("[APPEARS_AT:")[0].strip()
             cleaned_video_prompt = clean_ai_prompt(video_prompt, first_name)
             with open(short_video_dir / "video_prompt.txt", "w", encoding="utf-8") as f:
                 f.write(cleaned_video_prompt)
+        
+        # Save thumbnail prompt (cleaned)
+        if "[THUMBNAIL_PROMPT]" in content:
+            thumbnail_prompt = content.split("[THUMBNAIL_PROMPT]")[1].strip()
+            cleaned_thumbnail_prompt = clean_ai_prompt(thumbnail_prompt, first_name)
+            with open(short_video_dir / "thumbnail_prompt.txt", "w", encoding="utf-8") as f:
+                f.write(cleaned_thumbnail_prompt)
                 
     except Exception as e:
         print(f"⚠️ Error parsing video components: {e}")
