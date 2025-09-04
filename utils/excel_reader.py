@@ -2,7 +2,7 @@
 import pandas as pd
 import os
 
-def read_excel_names(file_path='/content/Names.xlsx', sheet_name='sheet'):
+def read_excel_names(file_path='Names.xlsx', sheet_name='sheet'):
     """
     Read names from Excel file and return the first name
     """
