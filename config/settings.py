@@ -4,7 +4,7 @@ from pathlib import Path
 
 # Project paths
 BASE_DIR = Path("/content/Output")
-EXCEL_FILE_PATH = "/content/Names.xlsx"
+EXCEL_FILE_PATH = "Names.xlsx"
 EXCEL_SHEET_NAME = "sheet"
 
 # API Settings
