@@ -5,9 +5,10 @@ import json
 import time
 import re
 from typing import Optional, Tuple
-from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Import from your existing API config
+from utils.api_config import setup_wavespeed_api
 
 class VideoGenerationError(Exception):
     """Custom exception for video generation errors"""
@@ -63,7 +64,6 @@ def generate_ai_video(
     prompt: str,
     duration: Optional[int] = None,
     aspect_ratio: Optional[str] = None,
-    api_key: Optional[str] = None,
     camera_fixed: bool = False,
     seed: int = -1,
     poll_interval: float = 2.0,
@@ -76,7 +76,6 @@ def generate_ai_video(
         prompt (str): The text prompt for video generation (may contain metadata)
         duration (int, optional): Video length in seconds. If None, extracted from prompt
         aspect_ratio (str, optional): Video aspect ratio. If None, extracted from prompt
-        api_key (str, optional): WaveSpeed API key. If None, uses env variable
         camera_fixed (bool): Whether to use fixed camera (default: False)
         seed (int): Random seed for reproducibility (default: -1 for random)
         poll_interval (float): Interval between polling requests in seconds
@@ -95,10 +94,10 @@ def generate_ai_video(
     final_duration = duration if duration is not None else parsed_duration
     final_aspect = aspect_ratio if aspect_ratio is not None else parsed_aspect
     
-    # Get API key
-    api_key = api_key or os.getenv("WAVESPEED_API_KEY")
+    # Get API key using your existing config system
+    api_key = setup_wavespeed_api()
     if not api_key:
-        raise VideoGenerationError("WAVESPEED_API_KEY not found in environment variables")
+        raise VideoGenerationError("WaveSpeedAI API key is not configured or invalid")
     
     # Validate inputs
     if not clean_prompt or not clean_prompt.strip():
