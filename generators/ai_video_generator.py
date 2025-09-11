@@ -109,8 +109,8 @@ def generate_ai_video(
     if not final_aspect or ":" not in final_aspect:
         raise VideoGenerationError("Invalid aspect ratio format. Use 'width:height'")
     
-    # API configuration
-    url = "https://api.wavespeed.ai/api/v3/bytedance/seedance-v1-lite-t2v-720p"
+    # Updated API configuration with new endpoint
+    url = "https://api.wavespeed.ai/api/v3/wavespeed-ai/wan-2.2/t2v-480p-ultra-fast"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
