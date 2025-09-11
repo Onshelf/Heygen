@@ -110,29 +110,33 @@ def generate_ai_video(
         raise VideoGenerationError("Invalid aspect ratio format. Use 'width:height'")
     
     # Updated API configuration with new endpoint
-    url = "https://api.wavespeed.ai/api/v3/wavespeed-ai/wan-2.2/t2v-480p-ultra-fast"
+    url = "https://api.wavespeed.ai/api/v3/wavespeed-ai/wan-2.2/t2v-720p-ultra-fast"
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
     }
     
+    # Convert aspect ratio to size format
+    width, height = final_aspect.split(":")
+    size = f"{width}*{height}"
+    
     payload = {
-        "aspect_ratio": final_aspect,
-        "camera_fixed": camera_fixed,
         "duration": final_duration,
+        "negative_prompt": "",
         "prompt": clean_prompt,
-        "seed": seed
+        "seed": seed,
+        "size": size
     }
     
     print(f"🎬 Generating video:")
     print(f"   Prompt: {clean_prompt}")
     print(f"   Duration: {final_duration}s")
-    print(f"   Aspect Ratio: {final_aspect}")
+    print(f"   Size: {size}")
     
     # Submit generation request
     begin = time.time()
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=30)
+        response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=30)
     except requests.exceptions.Timeout:
         raise VideoGenerationError("API request timeout")
     except requests.exceptions.RequestException as e:
