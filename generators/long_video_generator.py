@@ -2,9 +2,9 @@
 import openai
 import re
 from pathlib import Path
-from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
-from generators.ai_image_generator import generate_image_from_prompt_file  # Import the AI image generator
-from generators.ai_video_generator import generate_ai_video, VideoGenerationError  # Import the AI video generator
+from config.settings import OPENAI_MODEL, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
+from generators.ai_image_generator import generate_image_from_prompt_file
+from generators.ai_video_generator import generate_ai_video, VideoGenerationError
 
 # List of restricted words that cannot be in the final prompts
 RESTRICTED_WORDS = [
@@ -104,6 +104,12 @@ Format the script with clear section markers like [SECTION 1], [SECTION 2], etc.
             with open(long_video_dir / "thumbnail_prompt.txt", "w", encoding="utf-8") as f:
                 f.write(thumbnail_prompt)
         
+        # Generate YouTube description with emojis and hashtags
+        youtube_description = generate_youtube_description(first_name, text, script_content)
+        if youtube_description:
+            with open(long_video_dir / "youtube_description.txt", "w", encoding="utf-8") as f:
+                f.write(youtube_description)
+        
         # Generate AI images from the prompts (all in 1280x720 format)
         image_success = generate_ai_images_from_prompts(long_video_dir)
         
@@ -111,12 +117,79 @@ Format the script with clear section markers like [SECTION 1], [SECTION 2], etc.
         video_success = generate_ai_videos_from_prompts(long_video_dir)
         
         print(f"✅ Long video content generated successfully!")
-        print(f"📝 Script and 14 visual prompts (10 images + 4 videos) saved")
+        print(f"📝 Script, YouTube description, and 14 visual prompts (10 images + 4 videos) saved")
         return True and image_success and video_success
         
     except Exception as e:
         print(f"❌ Error generating script: {e}")
         return False
+
+def generate_youtube_description(first_name, text, script_content):
+    """
+    Generate a professional YouTube description with emojis, formatting, and hashtags
+    """
+    description_prompt = f"""
+Based EXCLUSIVELY on the following information about {first_name}:
+
+{text[:MAX_TEXT_LENGTH]}
+
+And this documentary script content:
+
+{script_content[:1000]}...
+
+Create a compelling YouTube video description for a documentary about {first_name} that includes:
+
+1. **Engaging Hook**: Start with an attention-grabbing opening line with relevant emojis
+2. **Video Summary**: 2-3 paragraph description of what viewers will learn
+3. **Timestamps**: Create 5-7 key timestamps based on major sections of the documentary
+4. **Call to Action**: Professional call to subscribe, like, and turn on notifications
+5. **Hashtags**: 10-15 relevant hashtags including:
+   - #Documentary
+   - #Biography
+   - #{first_name.replace(' ', '')}
+   - #History
+   - #Inspiration
+   - Industry-specific hashtags
+
+FORMATTING REQUIREMENTS:
+- Use proper emojis throughout (🎬, 📚, 🎯, etc.)
+- Include blank lines between sections for readability
+- Use bold text for section headers (like **Timestamps:**)
+- Make it professional yet engaging
+- Keep total length under 4500 characters
+
+EXAMPLE STRUCTURE:
+🎬 [Engaging hook with emoji]
+
+[2-3 paragraph summary]
+
+**Timestamps:**
+00:00 - Introduction
+02:15 - Early Career
+...
+
+**Subscribe** to Visioneers for more inspiring documentaries! 🔔
+
+#Documentary #Biography #{first_name.replace(' ', '')} #History #Inspiration [more hashtags]
+"""
+
+    try:
+        response = openai.ChatCompletion.create(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a YouTube SEO expert and content strategist. Create compelling video descriptions that drive engagement, include relevant emojis, proper formatting, timestamps, and strategic hashtags. Make it professional and optimized for YouTube's algorithm."},
+                {"role": "user", "content": description_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=800
+        )
+        
+        description_content = response.choices[0].message.content.strip()
+        return description_content
+        
+    except Exception as e:
+        print(f"❌ Error generating YouTube description: {e}")
+        return None
 
 def extract_section_contents(script_content):
     """
