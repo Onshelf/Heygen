@@ -107,7 +107,7 @@ def generate_short_video_content(first_name, text, base_dir):
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a professional video content creator specializing in short-form vertical content. Create cinematic, symbolic visual prompts that represent script content. For image and video prompts, avoid using personal names. Avoid any restricted/inappropriate words. Focus on atmospheric, environmental, and symbolic representations using professional cinematic language."},
+                {"role": "system", "content": "You are a professional video content creator specializing in short-form vertical storytelling. Develop cinematic and symbolic visual prompts that translate script content into striking imagery. For image and video prompts, do not include personal names or restricted terms. Instead, emphasize atmosphere, environment, mood, and symbolic representation. Use precise, professional cinematic language that evokes strong emotion, captures attention instantly, and is optimized for vertical formats."},
                 {"role": "user", "content": prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
