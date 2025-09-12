@@ -60,6 +60,29 @@ def parse_video_size_from_prompt(prompt: str) -> Tuple[int, str, str]:
     
     return duration, aspect_ratio, clean_prompt
 
+def convert_aspect_ratio_to_api_format(aspect_ratio: str) -> str:
+    """
+    Convert aspect ratio to API's specific format
+    Only "1280*720" (landscape) and "720*1280" (portrait) are allowed
+    
+    Args:
+        aspect_ratio (str): Aspect ratio in 'width:height' format
+    
+    Returns:
+        str: Aspect ratio in API format
+    """
+    if aspect_ratio in ["16:9", "1280:720", "1280*720"]:
+        return "1280*720"  # Landscape
+    elif aspect_ratio in ["9:16", "720:1280", "720*1280"]:
+        return "720*1280"  # Portrait
+    elif aspect_ratio == "1:1":
+        # Square - choose portrait as default for short videos
+        return "720*1280"
+    else:
+        # Default to portrait for unrecognized formats
+        print(f"⚠️  Unrecognized aspect ratio '{aspect_ratio}', defaulting to portrait (720*1280)")
+        return "720*1280"
+
 def generate_ai_video(
     prompt: str,
     duration: Optional[int] = None,
@@ -106,8 +129,11 @@ def generate_ai_video(
     if final_duration <= 0:
         raise VideoGenerationError("Duration must be positive")
     
-    if not final_aspect or ":" not in final_aspect:
-        raise VideoGenerationError("Invalid aspect ratio format. Use 'width:height'")
+    if not final_aspect:
+        raise VideoGenerationError("Aspect ratio cannot be empty")
+    
+    # Convert aspect ratio to API format
+    api_size_format = convert_aspect_ratio_to_api_format(final_aspect)
     
     # Updated API configuration with new endpoint
     url = "https://api.wavespeed.ai/api/v3/wavespeed-ai/wan-2.2/t2v-720p-ultra-fast"
@@ -116,22 +142,18 @@ def generate_ai_video(
         "Authorization": f"Bearer {api_key}",
     }
     
-    # Convert aspect ratio to size format
-    width, height = final_aspect.split(":")
-    size = f"{width}*{height}"
-    
     payload = {
         "duration": final_duration,
         "negative_prompt": "",
         "prompt": clean_prompt,
         "seed": seed,
-        "size": size
+        "size": api_size_format  # Use the converted format
     }
     
     print(f"🎬 Generating video:")
     print(f"   Prompt: {clean_prompt}")
     print(f"   Duration: {final_duration}s")
-    print(f"   Size: {size}")
+    print(f"   Size: {api_size_format}")
     
     # Submit generation request
     begin = time.time()
