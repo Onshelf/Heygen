@@ -2,9 +2,9 @@
 import openai
 import re
 from pathlib import Path
-from config.settings import OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
-from generators.ai_image_generator import generate_image_from_prompt_file  # Import the AI image generator
-from generators.ai_video_generator import generate_ai_video, VideoGenerationError  # Import the AI video generator
+from config.settings import OPENAI_MODEL, OPENAI_TEMPERATURE, MAX_TEXT_LENGTH
+from generators.ai_image_generator import generate_image_from_prompt_file
+from generators.ai_video_generator import generate_ai_video, VideoGenerationError
 
 # List of restricted words that cannot be in the final prompts
 RESTRICTED_WORDS = [
@@ -63,10 +63,9 @@ def generate_short_video_content(first_name, text, base_dir):
     2. DESCRIPTION: Professional video description with relevant hashtags and emojis
     3. IMAGE_PROMPTS: 2 detailed AI image generation prompts for visuals
     4. VIDEO_PROMPT: 1 detailed AI video generation prompt for a 5-second clip
-    5. THUMBNAIL_PROMPT: 1 detailed AI image generation prompt specifically for a vertical thumbnail (720x1280)
     
     IMPORTANT RULES FOR VISUAL PROMPTS:
-    - DO NOT include the person's name ({first_name}) in any image or video prompts (EXCEPT for the THUMBNAIL_PROMPT)
+    - DO NOT include the person's name ({first_name}) in any image or video prompts
     - DO NOT include any restricted or inappropriate words (violence, weapons, explicit content, etc.)
     - Create CINEMATIC views that visually represent the content of each script section
     - Focus on symbolic, atmospheric, and environmental representations
@@ -75,24 +74,13 @@ def generate_short_video_content(first_name, text, base_dir):
     - VIDEO_PROMPT should represent the SECOND third of the script conceptually  
     - IMAGE_PROMPT_2 should represent the FINAL third of the script conceptually
     
-    SPECIAL RULE FOR THUMBNAIL_PROMPT:
-    - INCLUDE the person's name ({first_name}) in the thumbnail prompt to make it personalized and engaging
-    
     For image and video prompts, create detailed cinematic descriptions that include:
     - Visual atmosphere and mood
     - Camera angles and movement (for video)
     - Lighting and color palette
     - Composition and framing
     - Symbolic elements that represent the script content
-    - Professional cinematic style (no personal names except for thumbnail)
-    
-    For the THUMBNAIL_PROMPT, create a compelling vertical thumbnail (720x1280) that:
-    - Features {first_name} in a symbolic or atmospheric representation
-    - Uses bold, eye-catching colors optimized for mobile viewing
-    - Has a mysterious or intriguing element to drive clicks
-    - Uses professional cinematic photography style with dramatic lighting
-    - Includes negative space at the top or bottom for potential text overlay
-    - Optimized for vertical mobile viewing
+    - Professional cinematic style (no personal names)
     
     Format your response EXACTLY like this:
 
@@ -113,16 +101,13 @@ def generate_short_video_content(first_name, text, base_dir):
     [IMAGE_PROMPT_2]
     Your second cinematic image prompt here...
     [APPEARS_AT: FINAL third of script]
-
-    [THUMBNAIL_PROMPT]
-    Your cinematic thumbnail prompt here...
     """
 
     try:
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a professional video content creator specializing in short-form vertical content. Create cinematic, symbolic visual prompts that represent script content. For image and video prompts, avoid using personal names. For the thumbnail prompt, INCLUDE the person's name to make it personalized. Avoid any restricted/inappropriate words. Focus on atmospheric, environmental, and symbolic representations using professional cinematic language."},
+                {"role": "system", "content": "You are a professional video content creator specializing in short-form vertical content. Create cinematic, symbolic visual prompts that represent script content. For image and video prompts, avoid using personal names. Avoid any restricted/inappropriate words. Focus on atmospheric, environmental, and symbolic representations using professional cinematic language."},
                 {"role": "user", "content": prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
@@ -143,7 +128,7 @@ def generate_short_video_content(first_name, text, base_dir):
         # Generate AI images from the prompts (all in 720x1280 format)
         image_success = generate_ai_images_from_prompts(short_video_dir)
         
-        # Generate AI video from the video prompt (5 seconds, 9:16 aspect ratio)
+        # Generate AI video from the video prompt (5 seconds, vertical format)
         video_success = generate_ai_video_from_prompt(short_video_dir)
         
         print(f"✅ Short video content generated successfully!")
@@ -156,7 +141,7 @@ def generate_short_video_content(first_name, text, base_dir):
 def generate_ai_video_from_prompt(short_video_dir):
     """
     Generate AI video from the video prompt file
-    Uses 5-second duration and 9:16 aspect ratio
+    Uses 5-second duration and vertical format (720x1280)
     """
     try:
         video_prompt_file = short_video_dir / "video_prompt.txt"
@@ -172,12 +157,13 @@ def generate_ai_video_from_prompt(short_video_dir):
                 print("❌ Video prompt is empty")
                 return False
             
-            # Generate video with fixed 5-second duration and 9:16 aspect ratio
+            # Generate video with fixed 5-second duration and vertical format
+            # Use "720*1280" format which is accepted by the API
             video_url = generate_ai_video(
-                prompt=video_prompt,
-                duration=5,
-                aspect_ratio="9:16",
-                timeout=600
+             prompt=video_prompt,
+             duration=5,
+             aspect_ratio="9:16",  # Back to width:height format
+             timeout=600
             )
             
             # Save the video URL
@@ -227,26 +213,6 @@ def generate_ai_images_from_prompts(short_video_dir):
                     print(f"❌ AI image {i} generation failed: {error}")
                     image_success = False
         
-        # Generate thumbnail image (also in 720x1280 vertical format)
-        thumbnail_prompt_file = short_video_dir / "thumbnail_prompt.txt"
-        if thumbnail_prompt_file.exists():
-            print("🖼️ Generating thumbnail image from prompt...")
-            
-            # Use vertical format (720x1280) for thumbnail as well
-            success, image_path, error = generate_image_from_prompt_file(
-                thumbnail_prompt_file, 
-                short_video_dir, 
-                width=720, 
-                height=1280, 
-                image_name="short_video_thumbnail.jpg"
-            )
-            
-            if success:
-                print("✅ Thumbnail image generated successfully!")
-            else:
-                print(f"❌ Thumbnail image generation failed: {error}")
-                image_success = False
-        
         return image_success
         
     except Exception as e:
@@ -272,7 +238,7 @@ def parse_video_components(content, first_name, short_video_dir):
         image_prompts = []
         for i in range(1, 3):
             start_tag = f"[IMAGE_PROMPT_{i}]"
-            end_tag = f"[VIDEO_PROMPT]" if i == 1 else "[THUMBNAIL_PROMPT]"
+            end_tag = f"[VIDEO_PROMPT]" if i == 1 else "[IMAGE_PROMPT_2]"
             
             if start_tag in content and end_tag in content:
                 prompt_content = content.split(start_tag)[1].split(end_tag)[0].strip()
@@ -294,13 +260,6 @@ def parse_video_components(content, first_name, short_video_dir):
             cleaned_video_prompt = clean_ai_prompt(video_prompt, first_name, remove_name=True)
             with open(short_video_dir / "video_prompt.txt", "w", encoding="utf-8") as f:
                 f.write(cleaned_video_prompt)
-        
-        # Save thumbnail prompt (cleaned - remove restricted words but KEEP the name)
-        if "[THUMBNAIL_PROMPT]" in content:
-            thumbnail_prompt = content.split("[THUMBNAIL_PROMPT]")[1].strip()
-            cleaned_thumbnail_prompt = clean_ai_prompt(thumbnail_prompt, first_name, remove_name=False)
-            with open(short_video_dir / "thumbnail_prompt.txt", "w", encoding="utf-8") as f:
-                f.write(cleaned_thumbnail_prompt)
                 
     except Exception as e:
         print(f"⚠️ Error parsing video components: {e}")
