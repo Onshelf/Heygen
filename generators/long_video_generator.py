@@ -79,7 +79,7 @@ Format the script with clear section markers like [SECTION 1], [SECTION 2], etc.
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are an award-winning documentary filmmaker. Create professional, engaging scripts that focus on adult achievements. Use only centuries or parts of centuries for time references, never full dates. Ensure section 1 ends with the exact phrase: 'I'm Habeeb — this is Visioneers. Subscribe and stay inspired.'"},
+                {"role": "system", "content": "You are an acclaimed documentary filmmaker and storyteller. Write powerful, cinematic scripts tailored for the Visioneers channel, which highlights the achievements of great thinkers, inventors, and visionaries. Use only centuries or parts of centuries when referencing time — never exact dates. Keep the narrative inspiring, accessible, and professional, designed to engage a wide YouTube audience. Ensure Section 1 ends with the exact phrase: 'I'm Habeeb — this is Visioneers. Subscribe and stay inspired."},
                 {"role": "user", "content": script_prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
@@ -177,7 +177,7 @@ EXAMPLE STRUCTURE:
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a YouTube SEO expert and content strategist. Create compelling video descriptions that drive engagement, include relevant emojis, proper formatting, timestamps, and strategic hashtags. Make it professional and optimized for YouTube's algorithm."},
+                {"role": "system", "content": "You are a YouTube SEO expert and content strategist. Write professional, engaging video descriptions designed to maximize audience retention and search visibility. Use clear formatting, add relevant emojis, include timestamps where appropriate, and end with a strong call-to-action. Integrate strategic hashtags naturally to improve discoverability, ensuring the description is both viewer-friendly and optimized for YouTube’s algorithm."},
                 {"role": "user", "content": description_prompt}
             ],
             temperature=0.7,
@@ -293,7 +293,7 @@ Make it suitable for AI video models.
             response = openai.ChatCompletion.create(
                 model=OPENAI_MODEL,
                 messages=[
-                    {"role": "system", "content": f"You are an expert at creating detailed AI {prompt_type} generation prompts for specific documentary sections. Create cinematic, symbolic prompts that directly represent the given section content without using personal names or restricted words."},
+                    {"role": "system", "content": f"You are an expert in designing advanced AI {prompt_type} generation prompts for Visioneers documentary storytelling. Create cinematic and symbolic prompts that reflect the themes of innovation, discovery, and human achievement. Emphasize mood, lighting, perspective, and composition to capture the spirit of visionaries. Avoid personal names or restricted terms. Focus on clarity, creativity, and professional documentary style."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=OPENAI_TEMPERATURE,
@@ -403,7 +403,7 @@ IMPORTANT:
         response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are an expert at creating compelling YouTube thumbnail prompts. Create professional, cinematic prompts that would drive high click-through rates for documentary content."},
+                {"role": "system", "content": "You are an expert in crafting compelling AI prompts for YouTube thumbnails. Develop professional, cinematic concepts tailored for the Visioneers channel, which celebrates the achievements of great thinkers, inventors, and visionaries. Thumbnails should instantly capture attention with bold symbolism, dramatic lighting, and clear focal points. Keep the style clean, emotionally powerful, and optimized for high click-through rates while reflecting the channel’s inspiring theme of human achievement."},
                 {"role": "user", "content": thumbnail_prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
