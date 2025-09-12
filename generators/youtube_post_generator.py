@@ -51,7 +51,7 @@ def generate_youtube_post(first_name, text, base_dir):
         caption_response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are a creative social media content creator who uses emojis effectively."},
+                {"role": "system", "content": "You are a skilled YouTube content writer and social media strategist. Create engaging, professional posts that capture attention, connect with the audience, and drive interaction. Use emojis thoughtfully to enhance readability and convey emotion, without overwhelming the message."},
                 {"role": "user", "content": caption_prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
@@ -64,7 +64,7 @@ def generate_youtube_post(first_name, text, base_dir):
         image_response = openai.ChatCompletion.create(
             model=OPENAI_MODEL,
             messages=[
-                {"role": "system", "content": "You are an expert at creating detailed AI image generation prompts. Avoid including specific years or time periods."},
+                {"role": "system", "content": "You are an expert in crafting detailed AI image generation prompts. Create precise and vivid prompts that fully capture the intended subject, mood, and style. Avoid including specific years, dates, or exact time periods, focusing instead on general eras, centuries, or timeless settings. Ensure clarity, creativity, and professional quality suitable for cinematic or illustrative outputs."},
                 {"role": "user", "content": image_prompt}
             ],
             temperature=OPENAI_TEMPERATURE,
@@ -94,8 +94,8 @@ def generate_youtube_post(first_name, text, base_dir):
         success, image_path, error = generate_image_from_prompt_file(
             ai_prompt_file, 
             post_dir, 
-            width=1280, 
-            height=720, 
+            width=1024, 
+            height=1024, 
             image_name="youtube_thumbnail.jpg"
         )
         
